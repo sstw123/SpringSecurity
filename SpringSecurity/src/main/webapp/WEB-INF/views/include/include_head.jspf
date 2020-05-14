@@ -1,0 +1,66 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<c:set var="rootPath" value="${pageContext.request.contextPath}"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initian-scale=1">
+<title>Community</title>
+<script src="https://code.jquery.com/jquery-latest.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="${rootPath}/resources/modal.css" />
+<style>
+	:root {
+		--input-bg-color: rgba(0, 0, 0, 0.05);
+		--input-border-width: 2px;
+		--input-border-color: rgba(0, 0, 0, 0.05);
+		
+		--button-bg-color: #1E90FF;
+		--button-hover-bg-color: #6495ED;
+		--button-color: white;
+		
+		--label-text-color: #18181b;
+		--color-danger: #DC3545;
+		--color-success: #28A745;
+	}
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	
+	body {
+		margin-top: 120px;
+		height: 2000px;
+	}
+	h2 {
+		text-align: center;
+		padding-bottom: 20px;
+	}
+	input {
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+	}
+	button {
+		cursor: pointer;
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+		border: none;
+		background-color: var(--button-bg-color);
+		color: white;
+	}
+	
+	button:hover {
+		opacity: 0.8;
+	}
+	
+	/* input number 화살표 지우기 */
+	/* Chrome, Safari, Edge, Opera */
+	input::-webkit-outer-spin-button,
+	input::-webkit-inner-spin-button {
+	  -webkit-appearance: none;
+	  margin: 0;
+	}
+	
+	/* Firefox */
+	input[type=number] {
+	  -moz-appearance: textfield;
+	}
+</style>

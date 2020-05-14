@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- console에 log를 표시할때 사용할 패턴 설정 -->
+	<appender name="myLog" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- logback level ERROR WARN INFO DEBUG TRACE
+		ex) level을 INFO로 설정한 경우 : INFO레벨 이하의 메시지는 모두 무시
+		log.debug("메시지") 는 DEBUG 레벨이므로 콘솔에 보이지 않는다. -->
+	
+	<logger name="com.sif.community.controller" additivity="false" level="DEBUG">
+		<appender-ref ref="myLog" />
+	</logger>
+
+	<logger name="com.sif.community.service" additivity="false" level="DEBUG">
+		<appender-ref ref="myLog" />
+	</logger>
+
+	<root level="DEBUG">
+		<appender-ref ref="myLog" />
+	</root>
+
+</configuration>

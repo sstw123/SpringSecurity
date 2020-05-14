@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/security https://www.springframework.org/schema/security/spring-security-5.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<security:global-method-security secured-annotations="enabled"/>
+	
+	<!-- spring security exception message 커스터마이징 -->
+	<bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<!-- path 뒤의 .properties는 뺴줘야한다 -->
+				<value>/WEB-INF/spring/properties/spring-security.message.ko</value>
+			</list>
+		</property>
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="cacheSeconds" value="5"/>
+	</bean>
+		
+	<!-- Spring Security 프로젝트의 핵심 context 파일 -->
+	<!-- 여기에 Security 설정과 관련된 내용을 작성한다 -->
+	
+	<!-- 암호화 설정을 사용하기 위한 bean 설정 -->
+	<!-- Controller, Service가 아닌 최초 인증과정에서 사용할 bean -->
+	<!-- 생성자 첫번째 매개변수에 암호화 반복 횟수 설정. 기본값은 4이므로 4일 경우는 생략해도 된다. 해커 입장에선 4번을 풀어야 한다. -->
+	<!-- 횟수가 커질 수록 암호화 정도가 깊어지지만 성능이 하락한다 -->
+	<bean id="bcryptEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+		<constructor-arg index="0" value="4" />
+	</bean>
+	
+	<!-- login을 수행할 때 user DB로부터 사용자 정보 가져오기 설정(커스터마이징 하지 않고 사용할 때의 기본형) 
+	<bean id="secureDao" class="org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl">
+		<property name="dataSource" ref="mysqlDS"/>
+		<property name="usersByUsernameQuery">
+			<value>
+				SELECT user_name AS username, user_pass AS password, enabled
+				FROM tbl_users
+				WHERE user_name=?
+			</value>
+		</property>
+		
+		<property name="authoritiesByUsernameQuery">
+			<value>
+				SELECT username, authority
+				FROM authorities
+				WHERE username=?
+			</value>
+		</property>
+	</bean>
+	-->
+	
+	<!-- 사용자 login을 검증하는 부분(기본형) 
+	<security:authentication-manager>
+		<security:authentication-provider user-service-ref="secureDao">
+			<security:password-encoder ref="passwordEncoder"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+	-->
+	<context:component-scan base-package="com.sif.community.service"/>
+	<bean id="authProvider" class="com.sif.community.service.AuthenticationProviderImpl"/>
+	
+	<!--
+		hasRole()에서 ROLE_USER와 USER의 값 검사
+		Spring Security 4.2 미만에서는 DB에 ROLE_USER라고 저장되어 있으면 hasRole('ROLE_USER')으로 검사해야 한다
+		Spring Security 4.2 이상에서는 hasRole('USER')라고 검사해도 된다
+		간혹 검사가 안되는 문제를 해결하기 위해 4.2 이상에서는 bean을 하나 설정해서
+		DB에 ROLE_USER라고 저장되어 있어도 무조건 hasRole('USER')라고 검사하도록 설정할 수 있다
+	
+	<bean class="org.springframework.security.config.core.GrantedAuthorityDefaults">
+		<constructor-arg value="ROLE_"/>
+	</bean>
+	-->
+	
+	<!-- 사용자 login을 검증하는 부분 -->
+	<security:authentication-manager>
+		<security:authentication-provider ref="authProvider"/>
+	</security:authentication-manager>
+	
+	<!--
+		사용자 인증을 할 때 우리가 만든 login form과 연동하기 위한 설정
+		
+		<security:csrf disabled="false" /> : 시큐리티의 csrf 토큰 설정
+		POST 방식으로 서버에 데이터를 전송할 때 반드시 서버가 제공한 인증 관련 token을 포함하도록 하는 설정
+		
+		<security:intercept-url /> : 시큐리티의 url 주소패턴에 따라 접근권한 설정
+		pattern="/admin/**" : /admin/아래의 모든 주소
+		access="hasRole('admin')" : 접근 권한 설정
+		
+		만약 /user/**에 permitAll()
+		/user/mypage에 hasAnyRole('admin','user') 접근 권한을 설정하고 싶다면
+		반드시 /user/mypage를 /user/**보다 위쪽에 선언해야 한다
+		그렇지 않으면 mypage는 접근 권한이 없더라도 접근된다
+		
+		intercept-url access="hasRole()" 해당하는 권한이 있는 경우 url로 접근을 허락하고
+		그렇지 않으면(로그인되어있지 않은 경우, 권한이 없는 경우)에는 login 화면으로 redirection 한다
+		access="hasRole()" : 한가지의 권한 체크
+		access="hasAnyRole()" : 두가지 이상의 권한 중 한가지라도 일치하는지 체크
+		access="permitAll()" : 별도의 인증절차 없이 통과
+		
+		<security:http auto-config="true" use-expressions="true"> : 시큐리티의 http 설정
+		auto-config="true"	: form 기반 로그인 활성화
+		use-expressions		: 함수 기반 표현식을 사용할 수 있다
+		
+		<security:logout logout-url="/logout" /> : 시큐리티의 로그아웃 설정
+		logout 기능을 별도로 만들지않고 spring security가 기본으로 제공하는 logout 기능을 사용한다
+		임의로 logout 기능을 만드려면 logout-url 설정을 /logout이 아닌 다른 주소로 바꾸면 된다
+	-->
+	<security:http auto-config="true" use-expressions="true">
+		<security:csrf disabled="false"/>
+		
+		<security:intercept-url
+			pattern="/admin/**"
+			access="hasRole('ADMIN')" />
+			
+		<security:intercept-url
+			pattern="/user/mypage"
+			access="isAuthenticated()" />
+			
+		<security:intercept-url
+			pattern="/user/**"
+			access="permitAll()" />
+			
+		<security:intercept-url
+			pattern="/**"
+			access="permitAll()" />
+		
+		<security:form-login
+			login-page="/user/login"
+			authentication-failure-url="/user/login?error=1"
+			login-processing-url=""
+			default-target-url=""
+			username-parameter="username"
+			password-parameter="password" />
+			
+		<!--
+			logout 시 반드시
+			invalidate-session="true"
+			delete-cookies="true"로 설정한다
+			
+			delete-cookies="true"로 설정하지 않으면 웹브라우저에 저장된 쿠키를 탈취당하여 서버 공격에 사용될 수 있다
+		-->
+		<security:logout
+			logout-url="/logout"
+			invalidate-session="true"
+			delete-cookies="true"
+			logout-success-url="/" />
+	</security:http>
+</beans>

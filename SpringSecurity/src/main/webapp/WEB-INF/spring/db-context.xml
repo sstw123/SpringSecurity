@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx https://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- Security 인증과 관련된 user DB 설정 -->
+	<!-- dataSource : driverClassName, url, username, password -->
+	<!-- &amp;useSSL=false : 5.7에서 이슈 발생. 보안 연결을 설정하지 않으면 MySQL 서버에 접근하지 못하던 문제를 해결하는 방법이었음. 8.x에서는 사용하지 말아야 하는 옵션 -->
+	<!-- 8.0 버전대에서 사용하려면 &allowPublicKeyRetrieval=true 를 추가해야 한다 -->
+	<bean id="mysqlDS" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
+		<property name="url" value="jdbc:mysql://localhost:3306/community?serverTimezone=Asia/Seoul"/>
+		<property name="username" value="${mysql.username}"/>
+		<property name="password" value="${mysql.password}"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="mysqlDS" />
+		<property name="typeAliasesPackage" value="com.sif.community.model" />
+		<property name="mapperLocations" value="/WEB-INF/spring/mapper/*-mapper.xml" />
+	</bean>
+		
+	<!-- 트랜잭션 관리자 활성화 -->
+	<tx:annotation-driven/>
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="mysqlDS"/>
+	</bean>
+	
+	<mybatis-spring:scan base-package="com.sif.community.dao"/>
+</beans>
